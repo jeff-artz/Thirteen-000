@@ -114,7 +114,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Flutter Rummy')),
+      //appBar: AppBar(title: Text('Flutter Rummy')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -124,6 +124,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+         // no worky       Text('13')),
                 // =======================================================
                 // DRAW Button (Blue Card back)
                 GestureDetector(
@@ -142,7 +143,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                       width: kCardHeight * 0.7,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: candidateData.isNotEmpty ? Colors.green : Colors.grey,
+                          color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -156,25 +157,26 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                     );
                   },
                 ),
+                //------------------------------
+                // Submit Meld Button
+                ElevatedButton(
+                  onPressed: _submitMeld,
+                  child: Text('Go Out'),
+                ),
               ],
             ),
 
-            SizedBox(height: 16),
+  //          SizedBox(height: 16),
 
-            //------------------------------
-            // Submit Meld Button
-            ElevatedButton(
-              onPressed: _submitMeld,
-              child: Text('Submit Meld'),
-            ),
-
-            SizedBox(height: 16),
+//            SizedBox(height: 16),
 
             // =======================================================
             // Your hand display goes below
             Expanded(
               child: ReorderableListView(
+//how to center?                mainAxisAlignment: MainAxisAlignment.center,
                 scrollDirection: Axis.horizontal,
+                buildDefaultDragHandles: false,
                 onReorder: _onReorderHand,
                 children: playerHand.map((card) {
                   return Draggable<PlayingCard>(
@@ -189,7 +191,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                       ),
                     ),
                     childWhenDragging: Opacity(
-                      opacity: 0.25,
+                      opacity: 0.0,
                       child: PlayingCardWidget(
                         card: card,
                         onTap: () {},

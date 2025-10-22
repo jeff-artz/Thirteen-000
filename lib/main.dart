@@ -10,7 +10,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Rummy',
+      title: 'Flutter Thirteen',
       home: RummyGameScreen(), // or your main widget
     );
   }
