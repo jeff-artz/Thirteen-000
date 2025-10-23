@@ -36,6 +36,15 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
     }
   }
 
+  void _restartGame() {
+    setState(() {
+      deck = generateDeck(); // fresh deck
+      discardPileTop = null;
+      selectedCards.clear();
+      _dealInitialHand(); // re-deal hand
+    });
+  }
+
   // ignore: unused_element
   void _drawFromDiscard() {
     if (discardPileTop != null) {
@@ -131,7 +140,42 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-         // no worky       Text('13')),
+         
+                // Hand Size Manual Selection
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Round'),
+                    SizedBox(width: 8),
+                    DropdownButton<int>(
+                      value: HandSize,
+                      items: handSizeOptions.map((option) {
+                        return DropdownMenuItem<int>(
+                          value: option['value'],
+                          child: Text(option['label']),
+                        );
+                      }).toList(),
+                      onChanged: (newSize) {
+                        if (newSize != null) {
+                          setState(() {
+                            HandSize = newSize;
+                            _restartGame();
+                          });
+                        }
+                      },
+                    ),
+
+
+                  ],
+                ),
+
+                // Restart Game manual selection (Re-Deal?)
+                ElevatedButton(
+                  onPressed: _restartGame,
+                  child: Text('Restart'),
+                ),
+
+
                 // =======================================================
                 // DRAW Button (Blue Card back)
                 GestureDetector(
@@ -151,7 +195,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                       onTap: _drawFromDiscard,
                       child: Container(
                           height: kCardHeight,
-                          width: kCardHeight * 0.7,
+                          width: kCardHeight * 0.6,
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
@@ -213,7 +257,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                             ),
                           ),
                           childWhenDragging: Opacity(
-                            opacity: 0.0,
+                            opacity: 0.1,
                             child: Container(),
                           ),
                           onDragStarted: () => _selectCardForDiscard(card),
