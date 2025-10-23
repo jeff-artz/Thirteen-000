@@ -19,21 +19,11 @@ class PlayingCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey,
-            width: isSelected ? 3 : 1,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        
-        child: Image.asset(
+          child: Image.asset(
           card.imagePath,
-          height: kCardHeight,
+          height: kCardHeight ,
+          width: kCardHeight * 0.7 ,
         ),
-      ),
-    );
+      );
   }
 }

@@ -135,26 +135,31 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                   ),
                 ),
                 SizedBox(width: 20),
+                
+                // Discharge Pile Display
                 DragTarget<PlayingCard>(
                   onAccept: (card) => _discardCard(card),
                   builder: (context, candidateData, rejectedData) {
-                    return Container(
-                      height: kCardHeight,
-                      width: kCardHeight * 0.7,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: discardPileTop != null
-                          ? Image.asset(discardPileTop!.imagePath, fit: BoxFit.contain)
-                          : Image.asset(
-                            'assets/cards/empty_discard_pile.png',
-                            height: kCardHeight,
+                    return GestureDetector(
+                      onTap: _drawFromDiscard,
+                      child: Container(
+                          height: kCardHeight,
+                          width: kCardHeight * 0.7,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                    );
+                          child: discardPileTop != null
+                              ? Image.asset(discardPileTop!.imagePath, fit: BoxFit.contain)
+                              : Image.asset(
+                                'assets/cards/empty_discard_pile.png',
+                                height: kCardHeight,
+                              ),
+                        ),
+                      );
                   },
                 ),
                 //------------------------------
@@ -173,72 +178,51 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             // =======================================================
             // Your hand display goes below
             Expanded(
-              child: ReorderableListView(
-//how to center?                mainAxisAlignment: MainAxisAlignment.center,
+              child: ReorderableListView.builder(
                 scrollDirection: Axis.horizontal,
-                buildDefaultDragHandles: false,
+                itemCount: playerHand.length,
                 onReorder: _onReorderHand,
-                children: playerHand.map((card) {
-                  return Draggable<PlayingCard>(
-                    key: ValueKey(card),
-                    data: card,
-                    feedback: Material(
-                      color: Colors.transparent,
+                buildDefaultDragHandles: false,
+                itemBuilder: (context, index) {
+                  final card = playerHand[index];
+
+                  return ReorderableDragStartListener(
+                    key: ValueKey('${card.rank}_${card.suit}'), // ✅ unique key
+                    index: index,
+                    child: Draggable<PlayingCard>(
+                      data: card,
+                      feedback: Material(
+                        color: Colors.transparent,
+                        child: SizedBox(
+                          height: kCardHeight,
+                          width: kCardHeight * 0.7,
+                          child: PlayingCardWidget(
+                            card: card,
+                            onTap: () {},
+                            isSelected: selectedCards.contains(card),
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.0,
+                        child: Container(),
+                      ),
+                      onDragStarted: () => _selectCardForDiscard(card),
                       child: PlayingCardWidget(
                         card: card,
-                        onTap: () {},
+                        onTap: () => _toggleCardSelection(card),
                         isSelected: selectedCards.contains(card),
                       ),
-                    ),
-                    childWhenDragging: Opacity(
-                      opacity: 0.0,
-                      child: PlayingCardWidget(
-                        card: card,
-                        onTap: () {},
-                        isSelected: selectedCards.contains(card),
-                      ),
-                    ),
-                     child: PlayingCardWidget(
-                      card: card,
-                      onTap: () {},
-                      isSelected: selectedCards.contains(card),
                     ),
                   );
-                }).toList(),
+                }
+
               ),
-            )
-/*            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: playerHand.map((card) {
-                return Draggable<PlayingCard>(
-                  data: card,
-                  feedback: Material(
-                    color: Colors.transparent,
-                    child: PlayingCardWidget(
-                      card: card,
-                      onTap: () {},
-                      isSelected: false,
-                    ),
-                  ),
-                  childWhenDragging: Opacity(
-                    opacity: 0.5,
-                    child: PlayingCardWidget(
-                      card: card,
-                      onTap: () {},
-                      isSelected: selectedCards.contains(card),
-                    ),
-                  ),
-                  child: PlayingCardWidget(
-                    key: ValueKey(card),
-                    card: card,
-                    onTap: () => _toggleCardSelection(card),
-                    isSelected: selectedCards.contains(card),
-                  ),
-                );
-              }).toList(),
             ),
-*/
+
+
+
+
         //   SizedBox(height: 16),
 
           ],
