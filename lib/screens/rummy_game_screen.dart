@@ -29,20 +29,11 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
 
   void _drawCard() {
-    if (deck.isNotEmpty) {
+    if (deck.isNotEmpty && playerHand.length < HandSize + 1) {
       setState(() {
         playerHand.add(deck.removeAt(0));
       });
     }
-  }
-
-  void _restartGame() {
-    setState(() {
-      deck = generateDeck(); // fresh deck
-      discardPileTop = null;
-      selectedCards.clear();
-      _dealInitialHand(); // re-deal hand
-    });
   }
 
   // ignore: unused_element
@@ -55,6 +46,16 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
     }
   }
   
+
+  void _restartGame() {
+    setState(() {
+      deck = generateDeck(); // fresh deck
+      discardPileTop = null;
+      selectedCards.clear();
+      _dealInitialHand(); // re-deal hand
+    });
+  }
+
   void _onReorderHand(int oldIndex, int newIndex) {
   setState(() {
     if (newIndex > oldIndex) newIndex -= 1;
@@ -228,6 +229,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
             // =======================================================
             // Your hand display goes below
+/* HORIZONTAL */
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -257,7 +259,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                             ),
                           ),
                           childWhenDragging: Opacity(
-                            opacity: 0.1,
+                            opacity: 0.0,
                             child: Container(),
                           ),
                           onDragStarted: () => _selectCardForDiscard(card),
@@ -273,6 +275,52 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                 ),
               ),
             ),
+
+
+/* FANNED
+            Expanded(
+              child: Center(
+                child: SizedBox(
+                  height: kCardHeight * 1.5, // give room for rotation
+                  child: Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: List.generate(playerHand.length, (index) {
+                      final card = playerHand[index];
+                      final total = playerHand.length;
+                      final spread = 30.0; // total fan angle in degrees
+                      final angle = -spread / 2 + (spread / (total - 1)) * index;
+                      final offset = (index - total / 2) * 12.0;
+
+                      return Transform.translate(
+                        offset: Offset(offset, 0),
+                        child: Transform.rotate(
+                          angle: angle * 3.1416 / 180,
+                          child: Draggable<PlayingCard>(
+                            data: card,
+                            feedback: Material(
+                              color: Colors.transparent,
+                              child: PlayingCardWidget(
+                                card: card,
+                                onTap: () {},
+                                isSelected: selectedCards.contains(card),
+                              ),
+                            ),
+                            childWhenDragging: Opacity(opacity: 1.0, child: Container()),
+                            onDragStarted: () => _selectCardForDiscard(card),
+                            child: PlayingCardWidget(
+                              card: card,
+                              onTap: () => _toggleCardSelection(card),
+                              isSelected: selectedCards.contains(card),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ),
+*/
             //   SizedBox(height: 16),
           ],
         ),
