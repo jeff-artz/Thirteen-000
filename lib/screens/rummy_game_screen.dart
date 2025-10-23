@@ -48,8 +48,8 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   
   void _onReorderHand(int oldIndex, int newIndex) {
   setState(() {
-    final card = playerHand.removeAt(oldIndex);
     if (newIndex > oldIndex) newIndex -= 1;
+    final card = playerHand.removeAt(oldIndex);
     playerHand.insert(newIndex, card);
   });
 }
@@ -75,6 +75,13 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
       } else {
         selectedCards.add(card);
       }
+    });
+  }
+
+  void _reorderCard(PlayingCard draggedCard, int newIndex) {
+    setState(() {
+      playerHand.remove(draggedCard);
+      playerHand.insert(newIndex, draggedCard);
     });
   }
 
@@ -178,53 +185,51 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             // =======================================================
             // Your hand display goes below
             Expanded(
-              child: ReorderableListView.builder(
+              child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                itemCount: playerHand.length,
-                onReorder: _onReorderHand,
-                buildDefaultDragHandles: false,
-                itemBuilder: (context, index) {
-                  final card = playerHand[index];
+                child: Wrap(
+                  spacing: 8,
+                  children: List.generate(playerHand.length, (index) {
+                    final card = playerHand[index];
 
-                  return ReorderableDragStartListener(
-                    key: ValueKey('${card.rank}_${card.suit}'), // ✅ unique key
-                    index: index,
-                    child: Draggable<PlayingCard>(
-                      data: card,
-                      feedback: Material(
-                        color: Colors.transparent,
-                        child: SizedBox(
-                          height: kCardHeight,
-                          width: kCardHeight * 0.7,
+                    return DragTarget<PlayingCard>(
+                      onWillAccept: (incomingCard) => incomingCard != card,
+                      onAccept: (incomingCard) {
+                        _reorderCard(incomingCard, index);
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        return Draggable<PlayingCard>(
+                          data: card,
+                          feedback: Material(
+                            color: Colors.transparent,
+                            child: SizedBox(
+                              height: kCardHeight,
+                              width: kCardHeight * 0.7,
+                              child: PlayingCardWidget(
+                                card: card,
+                                onTap: () {},
+                                isSelected: selectedCards.contains(card),
+                              ),
+                            ),
+                          ),
+                          childWhenDragging: Opacity(
+                            opacity: 0.0,
+                            child: Container(),
+                          ),
+                          onDragStarted: () => _selectCardForDiscard(card),
                           child: PlayingCardWidget(
                             card: card,
-                            onTap: () {},
+                            onTap: () => _toggleCardSelection(card),
                             isSelected: selectedCards.contains(card),
                           ),
-                        ),
-                      ),
-                      childWhenDragging: Opacity(
-                        opacity: 0.0,
-                        child: Container(),
-                      ),
-                      onDragStarted: () => _selectCardForDiscard(card),
-                      child: PlayingCardWidget(
-                        card: card,
-                        onTap: () => _toggleCardSelection(card),
-                        isSelected: selectedCards.contains(card),
-                      ),
-                    ),
-                  );
-                }
-
+                        );
+                      },
+                    );
+                  }),
+                ),
               ),
             ),
-
-
-
-
-        //   SizedBox(height: 16),
-
+            //   SizedBox(height: 16),
           ],
         ),
       ),
