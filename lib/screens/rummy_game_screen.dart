@@ -56,13 +56,16 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
     });
   }
 
+  /*  UNUSED currently
   void _onReorderHand(int oldIndex, int newIndex) {
-  setState(() {
-    if (newIndex > oldIndex) newIndex -= 1;
-    final card = playerHand.removeAt(oldIndex);
-    playerHand.insert(newIndex, card);
-  });
-}
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      final card = playerHand.removeAt(oldIndex);
+      playerHand.insert(newIndex, card);
+    });
+  }
+  */
+
   // 
   void _selectCardForDiscard(PlayingCard card) {
     setState(() {
@@ -142,40 +145,50 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
          
+                // ------------------------------------------
                 // Hand Size Manual Selection
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('Round'),
-                    SizedBox(width: 8),
-                    DropdownButton<int>(
-                      value: HandSize,
-                      items: handSizeOptions.map((option) {
-                        return DropdownMenuItem<int>(
-                          value: option['value'],
-                          child: Text(option['label']),
-                        );
-                      }).toList(),
-                      onChanged: (newSize) {
-                        if (newSize != null) {
-                          setState(() {
-                            HandSize = newSize;
-                            _restartGame();
-                          });
-                        }
-                      },
+                    // ------------------------------------------
+                    // Restart Game manual selection (Re-Deal?)
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
+                        textStyle: TextStyle(fontSize: 10),
+                      ),
+                      onPressed: _restartGame,
+                      child: Text('Restart'),
                     ),
-
-
+                    // -----------------------------------------
+                    // Manual Hand size selection
+                    SizedBox(height: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Round'),
+                        SizedBox(height: 1),
+                        DropdownButton<int>(
+                          value: HandSize,
+                          items: handSizeOptions.map((option) {
+                            return DropdownMenuItem<int>(
+                              value: option['value'],
+                              child: Text(option['label']),
+                            );
+                          }).toList(),
+                          onChanged: (newSize) {
+                            if (newSize != null) {
+                              setState(() {
+                                HandSize = newSize;
+                                _restartGame();
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-
-                // Restart Game manual selection (Re-Deal?)
-                ElevatedButton(
-                  onPressed: _restartGame,
-                  child: Text('Restart'),
-                ),
-
 
                 // =======================================================
                 // DRAW Button (Blue Card back)
@@ -188,6 +201,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                 ),
                 SizedBox(width: 20),
                 
+                // =======================================================
                 // Discharge Pile Display
                 DragTarget<PlayingCard>(
                   onAccept: (card) => _discardCard(card),
@@ -196,7 +210,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                       onTap: _drawFromDiscard,
                       child: Container(
                           height: kCardHeight,
-                          width: kCardHeight * 0.6,
+                          //width: kCardHeight * 0.6,
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
@@ -223,18 +237,14 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
               ],
             ),
 
-  //          SizedBox(height: 16),
-
-//            SizedBox(height: 16),
-
             // =======================================================
             // Your hand display goes below
-/* HORIZONTAL */
+            /* HORIZONTAL */
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Wrap(
-                  spacing: 8,
+                  spacing: 0,
                   children: List.generate(playerHand.length, (index) {
                     final card = playerHand[index];
 
@@ -250,7 +260,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                             color: Colors.transparent,
                             child: SizedBox(
                               height: kCardHeight,
-                              width: kCardHeight * 0.7,
+                              width: kCardHeight * 0.2,
                               child: PlayingCardWidget(
                                 card: card,
                                 onTap: () {},
@@ -277,7 +287,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             ),
 
 
-/* FANNED
+            /* FANNED
             Expanded(
               child: Center(
                 child: SizedBox(
