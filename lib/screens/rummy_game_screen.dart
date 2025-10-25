@@ -12,8 +12,11 @@ class RummyGameScreen extends StatefulWidget {
 class _RummyGameScreenState extends State<RummyGameScreen> {
   late List<PlayingCard> deck;
   List<PlayingCard> playerHand = [];
+  List<PlayingCard> player2Hand = [];
   List<PlayingCard> selectedCards = [];
   PlayingCard? discardPileTop;
+
+  bool _showWildcards = true; // or false by default
 
   @override
   void initState() {
@@ -99,7 +102,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
 
   void _submitMeld() {
-    if (_isValidMeld(selectedCards)) {
+    if (_isValidMeld(playerHand)) {
       setState(() {
         playerHand.removeWhere((card) => selectedCards.contains(card));
         selectedCards.clear();
@@ -129,6 +132,10 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
       if (ranks[i + 1] != ranks[i] + 1) return false;
     }
     return true;
+  }
+
+  bool isWildcard(PlayingCard card) {
+    return card.rank == 0 || card.rank == HandSize;
   }
 
   @override
@@ -234,6 +241,20 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                   onPressed: _submitMeld,
                   child: Text('Go Out'),
                 ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Checkbox(
+                      value: _showWildcards,
+                      onChanged: (value) {
+                        setState(() {
+                          _showWildcards = value!;
+                        });
+                      },
+                    ),
+                    Text('Highlight Wildcards'),
+                  ],
+                ),
               ],
             ),
 
@@ -260,7 +281,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                             color: Colors.transparent,
                             child: SizedBox(
                               height: kCardHeight,
-                              width: kCardHeight * 0.2,
+                              width: kCardHeight * 0.7,
                               child: PlayingCardWidget(
                                 card: card,
                                 onTap: () {},
@@ -269,14 +290,23 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                             ),
                           ),
                           childWhenDragging: Opacity(
-                            opacity: 0.0,
+                            opacity: 1.0,
                             child: Container(),
                           ),
                           onDragStarted: () => _selectCardForDiscard(card),
-                          child: PlayingCardWidget(
-                            card: card,
-                            onTap: () => _toggleCardSelection(card),
-                            isSelected: selectedCards.contains(card),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: (_showWildcards && isWildcard(card)) ? Colors.cyan : Colors.transparent,
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: PlayingCardWidget(
+                              card: card,
+                              onTap: () => _toggleCardSelection(card),
+                              isSelected: selectedCards.contains(card),
+                            ),
                           ),
                         );
                       },
@@ -287,7 +317,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             ),
 
 
-            /* FANNED
+/* FANNED
             Expanded(
               child: Center(
                 child: SizedBox(
