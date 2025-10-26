@@ -220,8 +220,8 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                   left: (kCardHeight * 0.7) * 0.05, // 5% left margin
                   child: Container(
                     width: (kCardHeight * 0.7) * 0.9, // 90% width
-                    height: 2,
-                    color: (_showWildcards && isWildcard(card)) ? Colors.cyan : Colors.white,
+                    height: 4,
+                    color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
                   ),
                 ),
 
@@ -231,8 +231,8 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                   left: (kCardHeight * 0.7) * 0.05,
                   child: Container(
                     width: (kCardHeight * 0.7) * 0.9,
-                    height: 2,
-                    color: (_showWildcards && isWildcard(card)) ? Colors.cyan : Colors.white,
+                    height: 4,
+                    color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
                   ),
                 ),
               ],
@@ -249,6 +249,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       //appBar: AppBar(title: Text('Flutter Rummy')),
+      backgroundColor: colorBG, // 👈 sets full-screen background
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -332,7 +333,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
-                              width: 2,
+                              width: 4,
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -375,6 +376,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
             // Provide a gap
             SizedBox(height: 10),
+
             // =======================================================
             // Your hand display goes below
             // Scales cards to max width

@@ -1,7 +1,13 @@
 // constants.dart
+import 'package:flutter/material.dart';
+
 const double kCardHeight = 140.0;
 int HandSize = 3;
 int NumDecks = 2;
+
+const colorBG = Color(0xFF006400);
+const colorText = Colors.white;
+const colorWildHL = Colors.orange;
 
 final List<Map<String, dynamic>> handSizeOptions = [
   {'label': '3', 'value': 3},
