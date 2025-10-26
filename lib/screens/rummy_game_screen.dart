@@ -169,7 +169,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
   
 
-  Widget _buildDraggableCard(PlayingCard card, int index) {
+  Widget _buildDraggableCard(PlayingCard card, int index, double kCardHeight) {
     return DragTarget<PlayingCard>(
       onWillAccept: (incomingCard) => incomingCard != card,
       onAccept: (incomingCard) {
@@ -183,16 +183,29 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             child: SizedBox(
               height: kCardHeight,
               width: kCardHeight * 0.7,
-              child: PlayingCardWidget(
-                card: card,
-                onTap: () {},
-                isSelected: selectedCards.contains(card),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 🃏 Card with fixed height
+                  SizedBox(
+                    height: kCardHeight,
+                    child: PlayingCardWidget(
+                      card: card,
+                      onTap: () => _toggleCardSelection(card),
+                      isSelected: selectedCards.contains(card),
+                    ),
+                  ),
+                ],
               ),
-            ),
+            )
+
+
           ),
           childWhenDragging: Opacity(opacity: 1.0, child: Container()),
           onDragStarted: () => _selectCardForDiscard(card),
+/*
           child: SizedBox(
+            height: kCardHeight,
             width: kCardHeight * 0.7,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -216,6 +229,30 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
               ],
             ),
           )
+*/
+          child: SizedBox(
+            width: kCardHeight * 0.7,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 🃏 Your actual card
+                SizedBox(
+                  height: kCardHeight,
+                  child: PlayingCardWidget(
+                    card: card,
+                    onTap: () => _toggleCardSelection(card),
+                    isSelected: selectedCards.contains(card),
+                  ),
+                ),
+                Container(
+                  width: (kCardHeight * 0.7) * 0.9,
+                  height: 5,
+                  color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
+                ),
+              ],
+            ),
+          )
+
 
 
         );
@@ -223,8 +260,11 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
     );
   }
 
+  // DRAW THE SCREEN NOW
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final kCardHeight = screenHeight / 3;
     return Scaffold(
       //appBar: AppBar(title: Text('Flutter Rummy')),
       backgroundColor: colorBG, // 👈 sets full-screen background
@@ -310,7 +350,12 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                           //width: kCardHeight * 0.6,
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
+                              //color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
+                              color: candidateData.isNotEmpty
+                                  ? Colors.green
+                                  : (discardPile.isNotEmpty && _showWildcards && isWildcard(discardPile.last))
+                                      ? colorWildHL
+                                      : Colors.transparent,
                               width: 4,
                             ),
                             borderRadius: BorderRadius.circular(4),
@@ -398,7 +443,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
                         return Positioned(
                           left: offset,
-                          child: _buildDraggableCard(card, index),
+                          child: _buildDraggableCard(card, index, kCardHeight),
                         );
                       }),
                     ),

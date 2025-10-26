@@ -15,6 +15,7 @@ class PlayingCardWidget extends StatelessWidget {
     this.isSelected = false,
   }) : super(key: key);
 
+/*
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -26,5 +27,20 @@ class PlayingCardWidget extends StatelessWidget {
         ),
       );
   }
+*/
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox.expand( // ✅ fills parent height and width
+        child: Image.asset(
+          card.imagePath,
+          fit: BoxFit.contain, // ✅ scales image to fit
+        ),
+      ),
+    );
+  }
+
+
 } 
 
