@@ -14,7 +14,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   List<PlayingCard> playerHand = [];
   List<PlayingCard> player2Hand = [];
   List<PlayingCard> selectedCards = [];
-  PlayingCard? discardPileTop;
+  List<PlayingCard> discardPile = [];
 
   bool _showWildcards = true; // or false by default
 
@@ -27,8 +27,10 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
   void _dealInitialHand() {
     int dealCount = HandSize;
+    discardPile.clear;
     playerHand = deck.take(dealCount).toList();
     deck.removeRange(0, dealCount);
+    discardPile.add(deck.removeLast());
   }
 
   void _drawCard() {
@@ -46,20 +48,20 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
   // ignore: unused_element
   void _drawFromDiscard() {
-    if (discardPileTop != null) {
+    if (discardPile.isNotEmpty){
        if (deck.isNotEmpty && playerHand.length < HandSize + 1) {
          setState(() {
-          playerHand.add(discardPileTop!);
-          discardPileTop = null;
+          playerHand.add(discardPile.last!);
+          discardPile.removeLast();
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('You already have ${HandSize + 1} cards!  You can\'t pick up any more cards.')),
+            SnackBar(content: Text('a You already have ${HandSize + 1} cards!  You can\'t pick up any more cards.')),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('You already have ${HandSize + 1} cards!  You can\'t pick up any more cards.')),
+          SnackBar(content: Text('b You already have ${HandSize + 1} cards!  You can\'t pick up any more cards.')),
       );
 
     }
@@ -69,23 +71,12 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   void _restartGame() {
     setState(() {
       deck = generateDeck(); // fresh deck
-      discardPileTop = null;
-      selectedCards.clear();
+      discardPile.clear;
       _dealInitialHand(); // re-deal hand
     });
   }
 
-  /*  UNUSED currently
-  void _onReorderHand(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) newIndex -= 1;
-      final card = playerHand.removeAt(oldIndex);
-      playerHand.insert(newIndex, card);
-    });
-  }
-  */
-
-  // 
+   // 
   void _selectCardForDiscard(PlayingCard card) {
     setState(() {
       selectedCards = [card];
@@ -93,11 +84,10 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
 
   void _discardCard(PlayingCard card) {
-    if (deck.isNotEmpty && playerHand.length == HandSize + 1) {
+    if (playerHand.length == HandSize + 1) {
       setState(() {
           playerHand.remove(card);
-          discardPileTop = card;
-          selectedCards.clear();
+          discardPile.add(card);
         });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -203,37 +193,25 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
           childWhenDragging: Opacity(opacity: 1.0, child: Container()),
           onDragStarted: () => _selectCardForDiscard(card),
           child: SizedBox(
-            height: kCardHeight,
             width: kCardHeight * 0.7,
-            child: Stack(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // 🔽 Your actual card
-                PlayingCardWidget(
-                  card: card,
-                  onTap: () => _toggleCardSelection(card),
-                  isSelected: selectedCards.contains(card),
-                ),
-
-                // 🔼 Top line
-                Positioned(
-                  top: 0,
-                  left: (kCardHeight * 0.7) * 0.05, // 5% left margin
-                  child: Container(
-                    width: (kCardHeight * 0.7) * 0.9, // 90% width
-                    height: 4,
-                    color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
+                // 🃏 Your actual card
+                SizedBox(
+                  height: kCardHeight,
+                  child: PlayingCardWidget(
+                    card: card,
+                    onTap: () => _toggleCardSelection(card),
+                    isSelected: selectedCards.contains(card),
                   ),
                 ),
 
-                // 🔼 Bottom line
-                Positioned(
-                  bottom: 0,
-                  left: (kCardHeight * 0.7) * 0.05,
-                  child: Container(
-                    width: (kCardHeight * 0.7) * 0.9,
-                    height: 4,
-                    color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
-                  ),
+                // 🔽 Bottom line below the card
+                Container(
+                  width: (kCardHeight * 0.7) * 0.9,
+                  height: 5, // ⬅️ updated height
+                  color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
                 ),
               ],
             ),
@@ -321,7 +299,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                 SizedBox(width: 20),
                 
                 // =======================================================
-                // Discharge Pile Display
+                // Discard Pile Display
                 DragTarget<PlayingCard>(
                   onAccept: (card) => _discardCard(card),
                   builder: (context, candidateData, rejectedData) {
@@ -337,8 +315,8 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: discardPileTop != null
-                              ? Image.asset(discardPileTop!.imagePath, fit: BoxFit.contain)
+                          child: discardPile.isNotEmpty
+                              ? Image.asset(discardPile.last!.imagePath, fit: BoxFit.contain)
                               : Image.asset(
                                 'assets/cards/empty_discard_pile.png',
                                 height: kCardHeight,
@@ -348,31 +326,40 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                   },
                 ),
                 //------------------------------
-                // Go Out Button
-                Tooltip(
-                  message: 'You must have $HandSize cards to Go Out',
-                  child: ElevatedButton(
-                    onPressed: playerHand.length == HandSize ? _goOut : null,
-                    child: Text('Go Out'),
-                  ),
-                ),
-
-                Row(
+                Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start, // optional for left alignment
                   children: [
-                    Checkbox(
-                      value: _showWildcards,
-                      onChanged: (value) {
-                        setState(() {
-                          _showWildcards = value!;
-                        });
-                      },
+                    // 🟢 Go Out Button with Tooltip
+                    Tooltip(
+                      message: 'You must have $HandSize cards to Go Out',
+                      child: ElevatedButton(
+                        onPressed: playerHand.length == HandSize ? _goOut : null,
+                        child: const Text('Go Out'),
+                      ),
                     ),
-                    Text('Highlight Wildcards'),
+
+                    const SizedBox(height: 8), // spacing between button and checkbox
+
+                    // 🟡 Checkbox + Label stacked vertically
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Checkbox(
+                          value: _showWildcards,
+                          onChanged: (value) {
+                            setState(() {
+                              _showWildcards = value!;
+                            });
+                          },
+                        ),
+                        const Text('Highlight Wildcards'),
+                      ],
+                    ),
                   ],
                 ),
               ],
-            ),
+            ),  
 
             // Provide a gap
             SizedBox(height: 10),
