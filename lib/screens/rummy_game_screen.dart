@@ -36,16 +36,32 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
       setState(() {
         playerHand.add(deck.removeAt(0));
       });
+    }else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You already have ${HandSize + 1} cards!  You can\'t pick up any more cards.')),
+     );
+
     }
   }
 
   // ignore: unused_element
   void _drawFromDiscard() {
     if (discardPileTop != null) {
-      setState(() {
-        playerHand.add(discardPileTop!);
-        discardPileTop = null;
-      });
+       if (deck.isNotEmpty && playerHand.length < HandSize + 1) {
+         setState(() {
+          playerHand.add(discardPileTop!);
+          discardPileTop = null;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('You already have ${HandSize + 1} cards!  You can\'t pick up any more cards.')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You already have ${HandSize + 1} cards!  You can\'t pick up any more cards.')),
+      );
+
     }
   }
   
@@ -77,11 +93,18 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
 
   void _discardCard(PlayingCard card) {
-    setState(() {
-      playerHand.remove(card);
-      discardPileTop = card;
-      selectedCards.clear();
-    });
+    if (deck.isNotEmpty && playerHand.length == HandSize + 1) {
+      setState(() {
+          playerHand.remove(card);
+          discardPileTop = card;
+          selectedCards.clear();
+        });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You only have ${HandSize} cards - You can\'t discard.')),
+      );
+
+    }
   }
 
   void _toggleCardSelection(PlayingCard card) {
@@ -101,7 +124,23 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
     });
   }
 
-  void _submitMeld() {
+  void _goOut() {
+    if (HandSize < 15) {
+      setState(() {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('CONGRATULATIONS! On to the next round!')),
+        );
+        HandSize++;
+        _restartGame();
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('GAME OVER! ;-)')),
+      );
+    }
+
+
+    /*
     if (_isValidMeld(playerHand)) {
       setState(() {
         playerHand.removeWhere((card) => selectedCards.contains(card));
@@ -112,6 +151,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
         SnackBar(content: Text('Invalid meld!')),
       );
     }
+    */
   }
 
   bool _isValidMeld(List<PlayingCard> cards) {
@@ -135,7 +175,74 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
 
   bool isWildcard(PlayingCard card) {
-    return card.rank == 0 || card.rank == HandSize;
+    return card.rank == 0 || card.rank == HandSize || ( HandSize == 14 && card.rank == 1 ) || ( HandSize == 15 && card.rank == 2 );
+  }
+  
+
+  Widget _buildDraggableCard(PlayingCard card, int index) {
+    return DragTarget<PlayingCard>(
+      onWillAccept: (incomingCard) => incomingCard != card,
+      onAccept: (incomingCard) {
+        _reorderCard(incomingCard, index);
+      },
+      builder: (context, candidateData, rejectedData) {
+        return Draggable<PlayingCard>(
+          data: card,
+          feedback: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              height: kCardHeight,
+              width: kCardHeight * 0.7,
+              child: PlayingCardWidget(
+                card: card,
+                onTap: () {},
+                isSelected: selectedCards.contains(card),
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: 1.0, child: Container()),
+          onDragStarted: () => _selectCardForDiscard(card),
+          child: SizedBox(
+            height: kCardHeight,
+            width: kCardHeight * 0.7,
+            child: Stack(
+              children: [
+                // 🔽 Your actual card
+                PlayingCardWidget(
+                  card: card,
+                  onTap: () => _toggleCardSelection(card),
+                  isSelected: selectedCards.contains(card),
+                ),
+
+                // 🔼 Top line
+                Positioned(
+                  top: 0,
+                  left: (kCardHeight * 0.7) * 0.05, // 5% left margin
+                  child: Container(
+                    width: (kCardHeight * 0.7) * 0.9, // 90% width
+                    height: 2,
+                    color: (_showWildcards && isWildcard(card)) ? Colors.cyan : Colors.white,
+                  ),
+                ),
+
+                // 🔼 Bottom line
+                Positioned(
+                  bottom: 0,
+                  left: (kCardHeight * 0.7) * 0.05,
+                  child: Container(
+                    width: (kCardHeight * 0.7) * 0.9,
+                    height: 2,
+                    color: (_showWildcards && isWildcard(card)) ? Colors.cyan : Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          )
+
+
+        );
+      },
+    );
   }
 
   @override
@@ -159,14 +266,18 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                   children: [
                     // ------------------------------------------
                     // Restart Game manual selection (Re-Deal?)
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
-                        textStyle: TextStyle(fontSize: 10),
+                    GestureDetector(
+                      onDoubleTap: _restartGame,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
+                          textStyle: TextStyle(fontSize: 10),
+                        ),
+                        onPressed: null, // disables single-tap
+                        child: Text('Restart'),
                       ),
-                      onPressed: _restartGame,
-                      child: Text('Restart'),
                     ),
+
                     // -----------------------------------------
                     // Manual Hand size selection
                     SizedBox(height: 8),
@@ -236,11 +347,15 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                   },
                 ),
                 //------------------------------
-                // Submit Meld Button
-                ElevatedButton(
-                  onPressed: _submitMeld,
-                  child: Text('Go Out'),
+                // Go Out Button
+                Tooltip(
+                  message: 'You must have $HandSize cards to Go Out',
+                  child: ElevatedButton(
+                    onPressed: playerHand.length == HandSize ? _goOut : null,
+                    child: Text('Go Out'),
+                  ),
                 ),
+
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -258,109 +373,52 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
               ],
             ),
 
+            // Provide a gap
+            SizedBox(height: 10),
             // =======================================================
             // Your hand display goes below
-            /* HORIZONTAL */
+            // Scales cards to max width
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Wrap(
-                  spacing: 0,
-                  children: List.generate(playerHand.length, (index) {
-                    final card = playerHand[index];
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth;
+                  final cardCount = playerHand.length;
+                  final cardWidth = kCardHeight * 0.7;
+                  final idealSpacing = cardWidth;// + 8; // 8px padding
+                  final totalIdealWidth = idealSpacing * cardCount;
 
-                    return DragTarget<PlayingCard>(
-                      onWillAccept: (incomingCard) => incomingCard != card,
-                      onAccept: (incomingCard) {
-                        _reorderCard(incomingCard, index);
-                      },
-                      builder: (context, candidateData, rejectedData) {
-                        return Draggable<PlayingCard>(
-                          data: card,
-                          feedback: Material(
-                            color: Colors.transparent,
-                            child: SizedBox(
-                              height: kCardHeight,
-                              width: kCardHeight * 0.7,
-                              child: PlayingCardWidget(
-                                card: card,
-                                onTap: () {},
-                                isSelected: selectedCards.contains(card),
-                              ),
-                            ),
-                          ),
-                          childWhenDragging: Opacity(
-                            opacity: 1.0,
-                            child: Container(),
-                          ),
-                          onDragStarted: () => _selectCardForDiscard(card),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: (_showWildcards && isWildcard(card)) ? Colors.cyan : Colors.transparent,
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: PlayingCardWidget(
-                              card: card,
-                              onTap: () => _toggleCardSelection(card),
-                              isSelected: selectedCards.contains(card),
-                            ),
-                          ),
+                  // Calculate spacing
+                  final spacing = totalIdealWidth <= totalWidth
+                      ? idealSpacing
+                      : (totalWidth - cardWidth) / (cardCount - 1);
+
+                  // Clamp spacing to avoid excessive overlap
+                  final clampedSpacing = spacing.clamp(0.0, idealSpacing);
+
+                  // Calculate total hand width
+                  final handWidth = cardWidth + clampedSpacing * (cardCount - 1);
+                  final startOffset = (totalWidth - handWidth) / 2;
+
+                  return SizedBox(
+                    width: totalWidth,
+                    height: kCardHeight,
+                    child: Stack(
+                      children: List.generate(cardCount, (index) {
+                        final card = playerHand[index];
+                        final offset = startOffset + clampedSpacing * index;
+
+                        return Positioned(
+                          left: offset,
+                          child: _buildDraggableCard(card, index),
                         );
-                      },
-                    );
-                  }),
-                ),
+                      }),
+                    ),
+
+                  );
+                },
               ),
-            ),
+            )
 
-
-/* FANNED
-            Expanded(
-              child: Center(
-                child: SizedBox(
-                  height: kCardHeight * 1.5, // give room for rotation
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: List.generate(playerHand.length, (index) {
-                      final card = playerHand[index];
-                      final total = playerHand.length;
-                      final spread = 30.0; // total fan angle in degrees
-                      final angle = -spread / 2 + (spread / (total - 1)) * index;
-                      final offset = (index - total / 2) * 12.0;
-
-                      return Transform.translate(
-                        offset: Offset(offset, 0),
-                        child: Transform.rotate(
-                          angle: angle * 3.1416 / 180,
-                          child: Draggable<PlayingCard>(
-                            data: card,
-                            feedback: Material(
-                              color: Colors.transparent,
-                              child: PlayingCardWidget(
-                                card: card,
-                                onTap: () {},
-                                isSelected: selectedCards.contains(card),
-                              ),
-                            ),
-                            childWhenDragging: Opacity(opacity: 1.0, child: Container()),
-                            onDragStarted: () => _selectCardForDiscard(card),
-                            child: PlayingCardWidget(
-                              card: card,
-                              onTap: () => _toggleCardSelection(card),
-                              isSelected: selectedCards.contains(card),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ),
-            ),
-*/
             //   SizedBox(height: 16),
           ],
         ),

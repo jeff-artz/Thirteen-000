@@ -26,4 +26,5 @@ class PlayingCardWidget extends StatelessWidget {
         ),
       );
   }
-}
+} 
+

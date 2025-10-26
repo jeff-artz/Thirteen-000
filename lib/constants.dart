@@ -1,5 +1,5 @@
 // constants.dart
-const double kCardHeight = 120.0;
+const double kCardHeight = 140.0;
 int HandSize = 3;
 int NumDecks = 2;
 
@@ -16,5 +16,6 @@ final List<Map<String, dynamic>> handSizeOptions = [
   {'label': '12 (Q)', 'value': 12},
   {'label': '13 (K)', 'value': 13},
   {'label': '14 (A)', 'value': 14},
+  {'label': '15 (2)', 'value': 15},
 ];
 
