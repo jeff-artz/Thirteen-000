@@ -118,7 +118,10 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
     if (HandSize < 15) {
       setState(() {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('CONGRATULATIONS! On to the next round!')),
+          SnackBar(
+            content: Text('CONGRATULATIONS! On to the next round!'),
+            duration: Duration(seconds: 1),
+          ),
         );
         HandSize++;
         _restartGame();
@@ -130,18 +133,6 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
     }
 
 
-    /*
-    if (_isValidMeld(playerHand)) {
-      setState(() {
-        playerHand.removeWhere((card) => selectedCards.contains(card));
-        selectedCards.clear();
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Invalid meld!')),
-      );
-    }
-    */
   }
 
   bool _isValidMeld(List<PlayingCard> cards) {
@@ -170,6 +161,8 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   
 
   Widget _buildDraggableCard(PlayingCard card, int index, double kCardHeight) {
+    double heightWCBar = (kCardHeight * 0.05).clamp(10.0,20.0);
+   // heightWCBar=10;
     return DragTarget<PlayingCard>(
       onWillAccept: (incomingCard) => incomingCard != card,
       onAccept: (incomingCard) {
@@ -203,33 +196,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
           ),
           childWhenDragging: Opacity(opacity: 1.0, child: Container()),
           onDragStarted: () => _selectCardForDiscard(card),
-/*
-          child: SizedBox(
-            height: kCardHeight,
-            width: kCardHeight * 0.7,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 🃏 Your actual card
-                SizedBox(
-                  height: kCardHeight,
-                  child: PlayingCardWidget(
-                    card: card,
-                    onTap: () => _toggleCardSelection(card),
-                    isSelected: selectedCards.contains(card),
-                  ),
-                ),
 
-                // 🔽 Bottom line below the card
-                Container(
-                  width: (kCardHeight * 0.7) * 0.9,
-                  height: 5, // ⬅️ updated height
-                  color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
-                ),
-              ],
-            ),
-          )
-*/
           child: SizedBox(
             width: kCardHeight * 0.7,
             child: Column(
@@ -246,8 +213,8 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                 ),
                 Container(
                   width: (kCardHeight * 0.7) * 0.9,
-                  height: 5,
-                  color: (_showWildcards && isWildcard(card)) ? colorWildHL : colorBG,
+                  height: heightWCBar,
+                  color: (_showWildcards && isWildcard(card)) ? colorWildHL :colorBG,
                 ),
               ],
             ),
@@ -264,7 +231,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final kCardHeight = screenHeight / 3;
+    final kCardHeight = screenHeight / 2.25;
     return Scaffold(
       //appBar: AppBar(title: Text('Flutter Rummy')),
       backgroundColor: colorBG, // 👈 sets full-screen background
@@ -398,7 +365,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                             });
                           },
                         ),
-                        const Text('Highlight Wildcards'),
+                        const Text('Show Wildcards'),
                       ],
                     ),
                   ],
@@ -407,7 +374,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             ),  
 
             // Provide a gap
-            SizedBox(height: 10),
+            SizedBox(height: 5),
 
             // =======================================================
             // Your hand display goes below
