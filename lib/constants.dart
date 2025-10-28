@@ -2,27 +2,46 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 
+// Interface defaults
 const double kCardHeight = 140.0;
+double heightWCBar = 5;
+// Interface Colors (Change to themes maybe?)
+const colorBG = Color(0xFF006400);   // Background Color
+const colorText = Colors.white;      // Text Color
+const colorWildHL = Colors.orange;   // Wild Highlight Color
+
+// Initial Game Play options
 int HandSize = 3;
 int NumDecks = 2;
-int NumPlayers = 2;
-int currentPlayerIndex = 0; // Base 0
+int currentPlayerIndex = 0; // First player is #0 (Base 0)
 bool showCards = true;
-
-double heightWCBar = 5;
 bool canDrawCard = true;
 
+// MultiPlayer Setup
+int NumPlayers = 2;         // Minimum of 2 players, 1 local, 1 AI or Web
 List<Player> players = [];
-/*
-  Player(id: 'p1', name: 'Jeff', hand: []),
-  Player(id: 'p2', name: 'Liz', hand: []),
+
+// Card Names
+const cardName = [
+  'Joker', // 0
+  'Ace',   // 1
+  '2',     // 2
+  '3',     // 3
+  '4',     // 4
+  '5',     // 5
+  '6',     // 6
+  '7',     // 7
+  '8',     // 8
+  '9',     // 9
+  '10',    // 10
+  'Jack',  // 11
+  'Queen', // 12
+  'King',  // 13
+  'Ace',   // 14
+  '2'      // 15
 ];
-*/
 
-const colorBG = Color(0xFF006400);
-const colorText = Colors.white;
-const colorWildHL = Colors.orange;
-
+// Round Dropdown List Values
 final List<Map<String, dynamic>> handSizeOptions = [
   {'label': '3', 'value': 3},
   {'label': '4', 'value': 4},

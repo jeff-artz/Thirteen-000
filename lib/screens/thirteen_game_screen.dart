@@ -184,7 +184,25 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
       showCards=false;
     });
   }
-  
+
+  // Part of Meld checking
+  int getWildcardValueForRound(int roundNumber) {
+    // Round 3 → 3s are wild, Round 2 → 4s, ..., Round 13 → Kings
+    // Round 14 → Aces, Round 15 → 2s
+    //return roundNumber % 13; 
+    return roundNumber == 13 ? 2 : roundNumber + 2;
+    // 0 = Joker, 1 = Ace, ..., 13 = King
+  }
+  bool isCardWild(PlayingCard card, int roundNumber) {
+    final wildcardValue = getWildcardValueForRound(roundNumber);
+    return card.rank == 0 || card.rank == wildcardValue;
+  }
+
+  // Return the Card NAME for the value
+  String describeCardValue(int value) {
+    return cardName[value];
+  }
+
   Widget buildPlayerHandLayout(List<PlayingCard> hand, double cardHeight) {
     return Expanded(
       child: LayoutBuilder(
@@ -360,7 +378,22 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
                         ),
                       ],
                     ),
-
+                    Text(
+                      'Wild',
+                      style: TextStyle(
+                        fontSize: 15,
+                        //fontWeight: FontWeight.bold,
+                        color: Colors.yellow,
+                      ),
+                    ),
+                    Text(
+                      '${describeCardValue(getWildcardValueForRound(HandSize - 2))}',
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.yellow,
+                      ),
+                    ),
                   ],
                 ),
 
