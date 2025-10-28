@@ -29,7 +29,7 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
   @override
   void initState() {
     super.initState();
-    deck = generateDeck();
+    deck = generateDeck(NumDecks,HandSize);
     _dealInitialHand();
   }
 
@@ -52,7 +52,7 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
   }
 
   void _drawCard() {
-    if (deck.isNotEmpty && players[0].hand.length < HandSize + 1) {
+    if (deck.isNotEmpty && players[currentPlayerIndex].hand.length < HandSize + 1) {
       setState(() {
         players[currentPlayerIndex].hand.add(deck.removeAt(0));
       });
@@ -67,7 +67,7 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
   // ignore: unused_element
   void _drawFromDiscard() {
     if (discardPile.isNotEmpty){
-       if (deck.isNotEmpty && players[0].hand.length < HandSize + 1) {
+       if (deck.isNotEmpty && players[currentPlayerIndex].hand.length < HandSize + 1) {
          setState(() {
           players[currentPlayerIndex].hand.add(discardPile.last!);
           discardPile.removeLast();
@@ -88,7 +88,7 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
 
   void _restartGame() {
     setState(() {
-      deck = generateDeck(); // fresh deck
+      deck = generateDeck(NumDecks,HandSize); // fresh deck
       discardPile.clear;
       _dealInitialHand(); // re-deal hand
     });
@@ -185,18 +185,6 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
     });
   }
 
-  // Part of Meld checking
-  int getWildcardValueForRound(int roundNumber) {
-    // Round 3 → 3s are wild, Round 2 → 4s, ..., Round 13 → Kings
-    // Round 14 → Aces, Round 15 → 2s
-    //return roundNumber % 13; 
-    return roundNumber == 13 ? 2 : roundNumber + 2;
-    // 0 = Joker, 1 = Ace, ..., 13 = King
-  }
-  bool isCardWild(PlayingCard card, int roundNumber) {
-    final wildcardValue = getWildcardValueForRound(roundNumber);
-    return card.rank == 0 || card.rank == wildcardValue;
-  }
 
   // Return the Card NAME for the value
   String describeCardValue(int value) {

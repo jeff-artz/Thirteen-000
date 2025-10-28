@@ -58,3 +58,13 @@ final List<Map<String, dynamic>> handSizeOptions = [
   {'label': '15 (2)', 'value': 15},
 ];
 
+  // Part of Meld checking
+  int getWildcardValueForRound(int roundNumber) {
+    // Round 3 → 3s are wild, Round 2 → 4s, ..., Round 13 → Kings
+    // Round 14 → Aces, Round 15 → 2s
+    return roundNumber == 13 ? 2 : roundNumber + 2;
+  }
+  bool isCardWild(int cardRank, int roundNumber) {
+    final wildcardValue = getWildcardValueForRound(roundNumber);
+    return cardRank == 0 || cardRank == wildcardValue;
+  }
