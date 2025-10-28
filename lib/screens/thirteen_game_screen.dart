@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import '../models/playing_card.dart';
+import '../models/player.dart';
 import '../utils/deck_utils.dart';
 import '../widgets/card_widget.dart';
 import '../constants.dart';
 
-class RummyGameScreen extends StatefulWidget {
+class thirteenGameScreen extends StatefulWidget {
   @override
-  _RummyGameScreenState createState() => _RummyGameScreenState();
+  _thirteenGameScreenState createState() => _thirteenGameScreenState();
 }
 
-class _RummyGameScreenState extends State<RummyGameScreen> {
+class _thirteenGameScreenState extends State<thirteenGameScreen> {
+  final double cardWidth = kCardHeight * 0.65;
   late List<PlayingCard> deck;
-  List<PlayingCard> playerHand = [];
-  List<PlayingCard> player2Hand = [];
+  //List<PlayingCard> playerHand = [];
+  //List<PlayingCard> player2Hand = [];
   List<PlayingCard> selectedCards = [];
   List<PlayingCard> discardPile = [];
+  
+  // Temporary hardcoded list of Players
+  List<Player> players = [
+    Player(id: 'p1', name: 'Jeff', hand: []),
+    Player(id: 'p2', name: 'Liz', hand: []),
+  ];
 
   bool _showWildcards = true; // or false by default
 
@@ -26,17 +34,27 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
 
   void _dealInitialHand() {
-    int dealCount = HandSize;
-    discardPile.clear;
-    playerHand = deck.take(dealCount).toList();
-    deck.removeRange(0, dealCount);
+    // Clear the player hands
+    for (final player in players) {
+      player.hand.clear();
+    }
+    // Clear the discard pile
+    discardPile.clear();
+    // Deal cards to the players
+    for (int ncard = 0; ncard < HandSize; ncard++) {
+        for (int nplayer = 0; nplayer < NumPlayers; nplayer++) {
+          final card = deck.removeLast();
+          players[nplayer].hand.add(card);
+        }
+      }
+    // Deal one card to the discard pile
     discardPile.add(deck.removeLast());
   }
 
   void _drawCard() {
-    if (deck.isNotEmpty && playerHand.length < HandSize + 1) {
+    if (deck.isNotEmpty && players[0].hand.length < HandSize + 1) {
       setState(() {
-        playerHand.add(deck.removeAt(0));
+        players[currentPlayerIndex].hand.add(deck.removeAt(0));
       });
     }else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,9 +67,9 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   // ignore: unused_element
   void _drawFromDiscard() {
     if (discardPile.isNotEmpty){
-       if (deck.isNotEmpty && playerHand.length < HandSize + 1) {
+       if (deck.isNotEmpty && players[0].hand.length < HandSize + 1) {
          setState(() {
-          playerHand.add(discardPile.last!);
+          players[currentPlayerIndex].hand.add(discardPile.last!);
           discardPile.removeLast();
         });
       } else {
@@ -84,9 +102,9 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   }
 
   void _discardCard(PlayingCard card) {
-    if (playerHand.length == HandSize + 1) {
+    if (players[currentPlayerIndex].hand.length == HandSize + 1) {
       setState(() {
-          playerHand.remove(card);
+          players[currentPlayerIndex].hand.remove(card);
           discardPile.add(card);
         });
     } else {
@@ -109,8 +127,8 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
   void _reorderCard(PlayingCard draggedCard, int newIndex) {
     setState(() {
-      playerHand.remove(draggedCard);
-      playerHand.insert(newIndex, draggedCard);
+      players[currentPlayerIndex].hand.remove(draggedCard);
+      players[currentPlayerIndex].hand.insert(newIndex, draggedCard);
     });
   }
 
@@ -135,6 +153,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
   }
 
+  // ignore: unused_element
   bool _isValidMeld(List<PlayingCard> cards) {
     if (cards.length < 3) return false;
 
@@ -158,13 +177,60 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   bool isWildcard(PlayingCard card) {
     return card.rank == 0 || card.rank == HandSize || ( HandSize == 14 && card.rank == 1 ) || ( HandSize == 15 && card.rank == 2 );
   }
+
+  void _endTurn() {
+    setState(() {
+      currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+      showCards=false;
+    });
+  }
   
+  Widget buildPlayerHandLayout(List<PlayingCard> hand, double cardHeight) {
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          final cardCount = hand.length;
+          final cardWidth = cardHeight * 0.7;
+          final idealSpacing = cardWidth;
+          final totalIdealWidth = idealSpacing * cardCount;
+
+          final spacing = totalIdealWidth <= totalWidth
+              ? idealSpacing
+              : (totalWidth - cardWidth) / (cardCount - 1);
+
+          final clampedSpacing = spacing.clamp(0.0, idealSpacing);
+          final handWidth = cardWidth + clampedSpacing * (cardCount - 1);
+          final startOffset = (totalWidth - handWidth) / 2;
+
+          return SizedBox(
+            width: totalWidth,
+            height: cardHeight,
+            child: Stack(
+              children: List.generate(cardCount, (index) {
+                final card = hand[index];
+                final offset = startOffset + clampedSpacing * index;
+
+                return Positioned(
+                  left: offset,
+                  child: _buildDraggableCard(card, index, cardHeight),
+                );
+              }),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
 
   Widget _buildDraggableCard(PlayingCard card, int index, double kCardHeight) {
     double heightWCBar = (kCardHeight * 0.05).clamp(10.0,20.0);
    // heightWCBar=10;
     return DragTarget<PlayingCard>(
+      // ignore: deprecated_member_use
       onWillAccept: (incomingCard) => incomingCard != card,
+      // ignore: deprecated_member_use
       onAccept: (incomingCard) {
         _reorderCard(incomingCard, index);
       },
@@ -231,9 +297,11 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final kCardHeight = screenHeight / 2.25;
+    final kCardHeight = screenHeight / 2.5;
+    //final kCardHeight = screenHeight / 3.25;
+    String selectedPlayerId = players.first.id;
     return Scaffold(
-      //appBar: AppBar(title: Text('Flutter Rummy')),
+      //appBar: AppBar(title: Text('Flutter thirteen')),
       backgroundColor: colorBG, // 👈 sets full-screen background
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -250,6 +318,7 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+
                     // ------------------------------------------
                     // Restart Game manual selection (Re-Deal?)
                     GestureDetector(
@@ -266,12 +335,12 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
 
                     // -----------------------------------------
                     // Manual Hand size selection
-                    SizedBox(height: 8),
+                    SizedBox(height: 4),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Round'),
-                        SizedBox(height: 1),
+                        SizedBox(height: .75),
                         DropdownButton<int>(
                           value: HandSize,
                           items: handSizeOptions.map((option) {
@@ -291,52 +360,90 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                         ),
                       ],
                     ),
+
                   ],
                 ),
 
+                SizedBox(width: 30),
+
                 // =======================================================
                 // DRAW Button (Blue Card back)
-                GestureDetector(
-                  onTap: _drawCard,
-                  child: Image.asset(
-                    'assets/cards/blue_back.png',
-                    height: kCardHeight,
-                  ),
+                Stack(
+                  children: [
+                    // 🔹 Actual pile
+                    GestureDetector(
+                      onTap: _drawCard,
+                      child: Image.asset(
+                        'assets/cards/blue_back.png',
+                        height: kCardHeight,
+                      ),
+                    ),
+
+                    // 🔹 Dimming overlay
+                    if (players[0].hand.length == HandSize + 1) 
+                      Container(
+                        height: kCardHeight,
+                        width: kCardHeight * 0.65,
+                        color: Colors.black.withOpacity(0.4),
+                      ),
+                  ]
                 ),
+
                 SizedBox(width: 20),
                 
                 // =======================================================
                 // Discard Pile Display
+
                 DragTarget<PlayingCard>(
                   onAccept: (card) => _discardCard(card),
                   builder: (context, candidateData, rejectedData) {
-                    return GestureDetector(
-                      onTap: _drawFromDiscard,
-                      child: Container(
-                          height: kCardHeight,
-                          //width: kCardHeight * 0.6,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              //color: candidateData.isNotEmpty ? Colors.green : Colors.transparent,
-                              color: candidateData.isNotEmpty
-                                  ? Colors.green
-                                  : (discardPile.isNotEmpty && _showWildcards && isWildcard(discardPile.last))
-                                      ? colorWildHL
-                                      : Colors.transparent,
-                              width: 4,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: discardPile.isNotEmpty
-                              ? Image.asset(discardPile.last!.imagePath, fit: BoxFit.contain)
-                              : Image.asset(
-                                'assets/cards/empty_discard_pile.png',
-                                height: kCardHeight,
+                    return Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: _drawFromDiscard,
+                          child: Container(
+                            height: kCardHeight,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: candidateData.isNotEmpty
+                                    ? Colors.green
+                                    : (discardPile.isNotEmpty &&
+                                            _showWildcards &&
+                                            isWildcard(discardPile.last))
+                                        ? colorWildHL
+                                        : Colors.transparent,
+                                width: 6,
                               ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: discardPile.isNotEmpty
+                                ? Image.asset(
+                                    discardPile.last!.imagePath,
+                                    fit: BoxFit.contain,
+                                  )
+                                : Image.asset(
+                                    'assets/cards/empty_discard_pile.png',
+                                    height: kCardHeight,
+                                  ),
+                          ),
                         ),
-                      );
+
+                        // ✅ Dimming overlay that matches the card size
+                        if (players[0].hand.length == HandSize + 1)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
                   },
                 ),
+
+                SizedBox(width: 30),
                 //------------------------------
                 Column(
                   mainAxisSize: MainAxisSize.min,
@@ -346,12 +453,12 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                     Tooltip(
                       message: 'You must have $HandSize cards to Go Out',
                       child: ElevatedButton(
-                        onPressed: playerHand.length == HandSize ? _goOut : null,
+                        onPressed: players[0].hand.length == HandSize ? _goOut : null,
                         child: const Text('Go Out'),
                       ),
                     ),
 
-                    const SizedBox(height: 8), // spacing between button and checkbox
+                    //const SizedBox(height: 8), // spacing between button and checkbox
 
                     // 🟡 Checkbox + Label stacked vertically
                     Row(
@@ -368,6 +475,36 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
                         const Text('Show Wildcards'),
                       ],
                     ),
+                    //SizedBox(height: 4),
+                    
+                    /*
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          showCards = !showCards;
+                        });
+                      },
+                      child: Text(showCards ? 'Hide Cards' : 'Show Cards'),
+                    ),
+                    */
+
+                    // Player Name Display
+                    Text(
+                      'Player ${currentPlayerIndex + 1}: ${players[currentPlayerIndex].name}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+
+                    // End Turn
+                    ElevatedButton(
+                      onPressed: _endTurn,
+                      child: Text('End Turn'),
+                    ),
+
                   ],
                 ),
               ],
@@ -379,46 +516,26 @@ class _RummyGameScreenState extends State<RummyGameScreen> {
             // =======================================================
             // Your hand display goes below
             // Scales cards to max width
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final totalWidth = constraints.maxWidth;
-                  final cardCount = playerHand.length;
-                  final cardWidth = kCardHeight * 0.7;
-                  final idealSpacing = cardWidth;// + 8; // 8px padding
-                  final totalIdealWidth = idealSpacing * cardCount;
-
-                  // Calculate spacing
-                  final spacing = totalIdealWidth <= totalWidth
-                      ? idealSpacing
-                      : (totalWidth - cardWidth) / (cardCount - 1);
-
-                  // Clamp spacing to avoid excessive overlap
-                  final clampedSpacing = spacing.clamp(0.0, idealSpacing);
-
-                  // Calculate total hand width
-                  final handWidth = cardWidth + clampedSpacing * (cardCount - 1);
-                  final startOffset = (totalWidth - handWidth) / 2;
-
-                  return SizedBox(
-                    width: totalWidth,
-                    height: kCardHeight,
-                    child: Stack(
-                      children: List.generate(cardCount, (index) {
-                        final card = playerHand[index];
-                        final offset = startOffset + clampedSpacing * index;
-
-                        return Positioned(
-                          left: offset,
-                          child: _buildDraggableCard(card, index, kCardHeight),
-                        );
-                      }),
+            showCards
+              ? buildPlayerHandLayout(players[currentPlayerIndex].hand, kCardHeight)
+              : ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          showCards = !showCards;
+                        });
+                      },
+                      child: Text(
+                        '${players[currentPlayerIndex].name}\'s CARDS HIDDEN - Click here to show them',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
                     ),
-
-                  );
-                },
-              ),
-            )
+            //SizedBox(height: 16),
+            //buildPlayerHandLayout(players[0].hand, kCardHeight*.5),
+            //buildPlayerHandLayout(players[1].hand, kCardHeight*.5),
 
             //   SizedBox(height: 16),
           ],

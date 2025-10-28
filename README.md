@@ -1,4 +1,4 @@
-# rummy
+# Thirteen
 
 A new Flutter project.
 

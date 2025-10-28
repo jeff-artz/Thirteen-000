@@ -1,9 +1,23 @@
 // constants.dart
 import 'package:flutter/material.dart';
+import '../models/player.dart';
 
 const double kCardHeight = 140.0;
 int HandSize = 3;
 int NumDecks = 2;
+int NumPlayers = 2;
+int currentPlayerIndex = 0; // Base 0
+bool showCards = true;
+
+double heightWCBar = 5;
+bool canDrawCard = true;
+
+List<Player> players = [];
+/*
+  Player(id: 'p1', name: 'Jeff', hand: []),
+  Player(id: 'p2', name: 'Liz', hand: []),
+];
+*/
 
 const colorBG = Color(0xFF006400);
 const colorText = Colors.white;
