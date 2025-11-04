@@ -13,9 +13,18 @@ const colorWildHL = Colors.orange;   // Wild Highlight Color
 // Initial Game Play options
 int HandSize = 3;
 int NumDecks = 2;
+int PointsVariant = 0;
+int MaxHands = 14;
 int currentPlayerIndex = 0; // First player is #0 (Base 0)
 bool showCards = true;
 bool canDrawCard = true;
+bool dimDrawPile = false;
+bool dimGoOut = false;
+bool dimDiscardPile = false;
+bool mustDiscard = false;
+bool drawnAlready = false;
+bool dimEndTurn = false;
+
 
 // MultiPlayer Setup
 int NumPlayers = 2;         // Minimum of 2 players, 1 local, 1 AI or Web
@@ -40,6 +49,27 @@ const cardName = [
   'Ace',   // 14
   '2'      // 15
 ];
+
+// Card Point Values for different variants of the game
+// Our standard is column "0"
+const cardPoints = [
+  // 0  1  2   Column for points versions
+  [ 50, 0, 0 ], // 0  Joker
+  [ 15, 1, 0 ], // 1  Ace
+  [  2, 2, 0 ],   // 2  2
+  [  3, 3, 0 ],   // 3  3
+  [  4, 4, 0 ],   // 4  4
+  [  5, 5, 0 ],   // 5  5
+  [  6, 6, 0 ],   // 6  6
+  [  7, 7, 0 ],   // 7  7
+  [  8, 8, 0 ],   // 8  8
+  [  9, 9, 0 ],   // 9  0
+  [ 10,10, 0 ],  // 10 10 
+  [ 10,11, 0 ],   // 11 Jack
+  [ 10,12, 0 ],   // 12 Queen
+  [ 10,13, 0 ],   // 13 King
+];
+
 
 // Round Dropdown List Values
 final List<Map<String, dynamic>> handSizeOptions = [

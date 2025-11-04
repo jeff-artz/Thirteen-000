@@ -49,12 +49,19 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
       }
     // Deal one card to the discard pile
     discardPile.add(deck.removeLast());
+    dimEndTurn = true;
+    dimGoOut = true;
+    mustDiscard = false;
   }
 
   void _drawCard() {
     if (deck.isNotEmpty && players[currentPlayerIndex].hand.length < HandSize + 1) {
       setState(() {
         players[currentPlayerIndex].hand.add(deck.removeAt(0));
+        dimDrawPile=true;
+        dimDiscardPile=true;
+        mustDiscard = true;
+        drawnAlready = true;
       });
     }else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -64,13 +71,16 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
     }
   }
 
-  // ignore: unused_element
   void _drawFromDiscard() {
     if (discardPile.isNotEmpty){
        if (deck.isNotEmpty && players[currentPlayerIndex].hand.length < HandSize + 1) {
          setState(() {
           players[currentPlayerIndex].hand.add(discardPile.last!);
           discardPile.removeLast();
+          //dimDiscardPile=true;
+          dimDrawPile=true;
+          dimDiscardPile=true;
+          mustDiscard = true;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,6 +101,10 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
       deck = generateDeck(NumDecks,HandSize); // fresh deck
       discardPile.clear;
       _dealInitialHand(); // re-deal hand
+      dimEndTurn = true;
+      dimGoOut = true;
+      drawnAlready = false;
+      mustDiscard = false;
     });
   }
 
@@ -106,6 +120,13 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
       setState(() {
           players[currentPlayerIndex].hand.remove(card);
           discardPile.add(card);
+          //dimDiscardPile=true;
+          dimDrawPile=true;
+          dimEndTurn = false;
+          dimGoOut = false;
+          drawnAlready = true;
+          mustDiscard = false;
+          dimDiscardPile = false;
         });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,6 +162,11 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
             duration: Duration(seconds: 1),
           ),
         );
+        showCards = true;
+        dimDiscardPile = false;
+        dimDrawPile = false;
+        drawnAlready = false;
+        mustDiscard = false;
         HandSize++;
         _restartGame();
       });
@@ -178,10 +204,54 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
     return card.rank == 0 || card.rank == HandSize || ( HandSize == 14 && card.rank == 1 ) || ( HandSize == 15 && card.rank == 2 );
   }
 
+  // requires the players mark their melds... 
+  bool isValidMeld(List<PlayingCard> cards) {
+    if (cards.length < 3) return false;
+
+    // Filter out wildcards
+    final nonWilds = cards.where((c) => !isCardWild(c.rank, HandSize)).toList();
+    if (nonWilds.isEmpty) return false; // must have at least one non-wild
+
+    final wildCount = cards.length - nonWilds.length;
+
+    // Check for Set: all non-wilds have same rank
+    final sameRank = nonWilds.every((c) => c.rank == nonWilds[0].rank);
+    if (sameRank) return true;
+
+    // Check for Run: all non-wilds have same suit
+    final sameSuit = nonWilds.every((c) => c.suit == nonWilds[0].suit);
+    if (!sameSuit) return false;
+
+    // Sort ranks numerically
+    final sortedRanks = nonWilds.map((c) => c.rank).toList()..sort();
+
+    // Count gaps between consecutive ranks
+    int gaps = 0;
+    for (int i = 1; i < sortedRanks.length; i++) {
+      gaps += sortedRanks[i] - sortedRanks[i - 1] - 1;
+    }
+
+    // Valid run if wildcards can fill the gaps
+    return wildCount >= gaps;
+  }
+
+  bool areAllMeldsValid(List<List<PlayingCard>> melds) {
+    return melds.every((meld) => isValidMeld(meld));
+  }
+
+
+
+
   void _endTurn() {
     setState(() {
       currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
       showCards=false;
+      dimDiscardPile=true;
+      dimDrawPile=true;
+      dimEndTurn = true;
+      dimGoOut = true;
+      drawnAlready = false;
+      mustDiscard = false;
     });
   }
 
@@ -291,12 +361,79 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
               ],
             ),
           )
-
-
-
         );
       },
     );
+  }
+
+
+  // Helper text - "Draw" or "Discard" text between Draw and discard decks
+  // TODO: Fix to scale to fit height
+  Widget deckHelperText() {
+    const double fixedCharWidth = 30.0;
+
+    Widget buildHelperColumn(
+      List<String> chars,
+      TextStyle defaultStyle, {
+      required TextStyle arrowStyle,
+    }) {
+      return SizedBox(
+        height: kCardHeight,
+        width: 6.0,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: chars.map((char) {
+            final isArrow = char == '◄' || char == '►';
+            final style = isArrow ? arrowStyle : defaultStyle;
+
+            return Expanded(
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  char,
+                  //style: style.copyWith(
+                  //  fontSize: kCardHeight / chars.length * 0.9, // scale dynamically
+                  //),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    }
+
+
+    if (!dimDrawPile) {
+      return buildHelperColumn(
+        ['◄', 'D', 'R', 'A', 'W', '►' ],
+        TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        arrowStyle: TextStyle(
+          fontSize: 40,
+          fontWeight: FontWeight.bold,
+          color: Colors.red,        )
+      );
+    } else if (mustDiscard) {
+      return buildHelperColumn(
+        ['►', 'D', 'I', 'S', 'C', 'A', 'R', 'D', '►'],
+        TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.yellow,
+        ),
+        arrowStyle: TextStyle(
+          fontSize: 40,
+          fontWeight: FontWeight.bold,
+          color: Colors.red
+        ),
+      );
+    } else {
+      return SizedBox(width: fixedCharWidth);
+    }
   }
 
   // DRAW THE SCREEN NOW
@@ -324,29 +461,27 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-
-                    // ------------------------------------------
-                    // Restart Game manual selection (Re-Deal?)
-                    GestureDetector(
-                      onDoubleTap: _restartGame,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
-                          textStyle: TextStyle(fontSize: 10),
+                    // 🟡 Checkbox + Label stacked vertically
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Checkbox(
+                          value: _showWildcards,
+                          onChanged: (value) {
+                            setState(() {
+                              _showWildcards = value!;
+                            });
+                          },
                         ),
-                        onPressed: null, // disables single-tap
-                        child: Text('Restart'),
-                      ),
+                        const Text('HL Wilds'),
+                      ],
                     ),
-
                     // -----------------------------------------
                     // Manual Hand size selection
                     SizedBox(height: 4),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Round'),
-                        SizedBox(height: .75),
                         DropdownButton<int>(
                           value: HandSize,
                           items: handSizeOptions.map((option) {
@@ -369,7 +504,7 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
                     Text(
                       'Wild',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 18,
                         //fontWeight: FontWeight.bold,
                         color: Colors.yellow,
                       ),
@@ -377,7 +512,7 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
                     Text(
                       '${describeCardValue(getWildcardValueForRound(HandSize - 2))}',
                       style: TextStyle(
-                        fontSize: 25,
+                        fontSize: 30,
                         fontWeight: FontWeight.bold,
                         color: Colors.yellow,
                       ),
@@ -401,21 +536,35 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
                     ),
 
                     // 🔹 Dimming overlay
-                    if (players[0].hand.length == HandSize + 1) 
+                    if (players[0].hand.length == HandSize + 1 || dimDrawPile) 
                       Container(
                         height: kCardHeight,
                         width: kCardHeight * 0.65,
-                        color: Colors.black.withOpacity(0.4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                   ]
                 ),
 
-                SizedBox(width: 20),
+                // =======================================================
+                // Gap between Draw and Discharge Pile + "Helper" Text
+                SizedBox(width: 10),
+                Row(
+                  children: [
+                    deckHelperText(),
+                    // other widgets...
+                  ],
+                ),
+
+                SizedBox(width: 10),
+
                 
                 // =======================================================
                 // Discard Pile Display
 
-                DragTarget<PlayingCard>(
+/*                DragTarget<PlayingCard>(
                   onAccept: (card) => _discardCard(card),
                   builder: (context, candidateData, rejectedData) {
                     return Stack(
@@ -450,12 +599,12 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
                         ),
 
                         // ✅ Dimming overlay that matches the card size
-                        if (players[0].hand.length == HandSize + 1)
+                        if (players[0].hand.length == HandSize + 1 || dimDiscardPile )
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.4),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(162),
                               ),
                             ),
                           ),
@@ -463,69 +612,124 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
                     );
                   },
                 ),
+*/
+                DragTarget<PlayingCard>(
+                  onAccept: (card) => _discardCard(card),
+                  builder: (context, candidateData, rejectedData) {
+                    return Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: _drawFromDiscard,
+                          child: Container(
+                            height: kCardHeight,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: candidateData.isNotEmpty
+                                    ? Colors.green
+                                    : (discardPile.isNotEmpty &&
+                                            _showWildcards &&
+                                            isWildcard(discardPile.last))
+                                        ? colorWildHL
+                                        : Colors.transparent,
+                                width: 6,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Stack(
+                              children: [
+                                discardPile.isNotEmpty
+                                    ? Image.asset(
+                                        discardPile.last!.imagePath,
+                                        fit: BoxFit.contain,
+                                      )
+                                    : Image.asset(
+                                        'assets/cards/empty_discard_pile.png',
+                                        height: kCardHeight,
+                                      ),
+
+                                // ✅ Dimming overlay ONLY over the image
+                                if (players[0].hand.length == HandSize + 1 || dimDiscardPile)
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Colors.black.withOpacity(0.4),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
 
                 SizedBox(width: 30),
                 //------------------------------
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start, // optional for left alignment
-                  children: [
-                    // 🟢 Go Out Button with Tooltip
-                    Tooltip(
-                      message: 'You must have $HandSize cards to Go Out',
-                      child: ElevatedButton(
-                        onPressed: players[0].hand.length == HandSize ? _goOut : null,
-                        child: const Text('Go Out'),
-                      ),
-                    ),
-
-                    //const SizedBox(height: 8), // spacing between button and checkbox
-
-                    // 🟡 Checkbox + Label stacked vertically
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Checkbox(
-                          value: _showWildcards,
-                          onChanged: (value) {
-                            setState(() {
-                              _showWildcards = value!;
-                            });
-                          },
+                  children: [                  
+                    // Box around Player Name / Go Out / End Turn buttons
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.white, // Change to any color you want
+                          width: 2.0,
                         ),
-                        const Text('Show Wildcards'),
-                      ],
-                    ),
-                    //SizedBox(height: 4),
-                    
-                    /*
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          showCards = !showCards;
-                        });
-                      },
-                      child: Text(showCards ? 'Hide Cards' : 'Show Cards'),
-                    ),
-                    */
-
-                    // Player Name Display
-                    Text(
-                      'Player ${currentPlayerIndex + 1}: ${players[currentPlayerIndex].name}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8), // Optional rounded corners
+                        color: Colors.black.withOpacity(0.1), // Optional background
                       ),
-                    ),
-                    SizedBox(height: 8),
+                      padding: EdgeInsets.all(18), // Inner spacing
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
 
-                    // End Turn
-                    ElevatedButton(
-                      onPressed: _endTurn,
-                      child: Text('End Turn'),
-                    ),
+                          // Player Name Display
+                          Text(
+                            'Player ${currentPlayerIndex + 1}: ${players[currentPlayerIndex].name}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 5),
 
+                          // 🟢 Go Out Button with Tooltip
+                          Tooltip(
+                            message: 'You can’t Go Out yet',
+                            child: AnimatedOpacity(
+                              duration: Duration(milliseconds: 300),
+                              opacity: dimGoOut ? 0.4 : 1.0,
+                              child: IgnorePointer(
+                                ignoring: dimGoOut,
+                                child: ElevatedButton(
+                                  onPressed: players[0].hand.length == HandSize ? _goOut : null,
+                                  child: const Text(' Go Out '),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          // End Turn
+                          Tooltip(
+                            message: 'You can’t end your turn yet',
+                            child: AnimatedOpacity(
+                              duration: Duration(milliseconds: 300),
+                              opacity: dimEndTurn ? 0.4 : 1.0,
+                              child: IgnorePointer(
+                                ignoring: dimEndTurn,
+                                child: ElevatedButton(
+                                  onPressed: _endTurn,
+                                  child: Text('End Turn'),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   ],
                 ),
               ],
@@ -539,21 +743,29 @@ class _thirteenGameScreenState extends State<thirteenGameScreen> {
             // Scales cards to max width
             showCards
               ? buildPlayerHandLayout(players[currentPlayerIndex].hand, kCardHeight)
-              : ElevatedButton(
+              : Column(
+                  children: [
+                    SizedBox(height: kCardHeight * .4), 
+                    ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          showCards = !showCards;
+                          showCards = true;
+                          dimDiscardPile = false;
+                          dimDrawPile = false;
                         });
                       },
                       child: Text(
-                        '${players[currentPlayerIndex].name}\'s CARDS HIDDEN - Click here to show them',
+                        '${players[currentPlayerIndex].name}\'s CARDS ARE HIDDEN - Click here to show them',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 25,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                     ),
+                  ],
+                ),
+
             //SizedBox(height: 16),
             //buildPlayerHandLayout(players[0].hand, kCardHeight*.5),
             //buildPlayerHandLayout(players[1].hand, kCardHeight*.5),

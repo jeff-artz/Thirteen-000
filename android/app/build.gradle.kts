@@ -19,6 +19,14 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+//    applicationVariants.all { variant ->
+//        variant.outputs.all { output ->
+//            def apkName = "Thirteen.apk" 
+//            //-${variant.buildType.name}-${variant.versionName}.apk"
+//            output.outputFileName = apkName
+//        }
+//    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.Thirteen"
